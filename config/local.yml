@@ -1,1 +1,3 @@
 redis:
+  address: "localhost:6380"
+  password: ""

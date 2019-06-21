@@ -27,9 +27,10 @@ func setupFromDefaults(config *viper.Viper, env string) {
 	config.Set("env", env)
 
 	/*
-		server
+		redis
 	*/
-	config.SetDefault("server.port", "8000")
+	config.SetDefault("redis.pubsub.channels", "channels")
+	config.SetDefault("redis.pubsub.messages", "messages")
 }
 
 func setupFromConfigurationFile(config *viper.Viper, env string) error {

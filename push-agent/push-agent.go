@@ -1,18 +1,15 @@
 package agent
 
 import (
-	"github.com/spf13/viper"
 	"go.uber.org/fx"
-	"go.uber.org/zap"
 
 	"github.com/rafaeleyng/push-agent/push-agent/ctors"
+	"github.com/rafaeleyng/push-agent/push-agent/services"
 )
 
-func runApp(config *viper.Viper, logger *zap.Logger) error {
-	//port := config.GetString("server.port")
-	logger.Info("oii")
-
-	return nil
+func runApp(subscriptionService services.SubscriptionService) error {
+	err := subscriptionService.Subscribe()
+	return err
 }
 
 func Run() {
@@ -20,8 +17,10 @@ func Run() {
 		fx.Provide(
 			ctors.NewViper,
 			ctors.NewLogger,
+			ctors.NewRedis,
 
 			// services
+			ctors.NewSubscriptionService,
 		),
 		fx.Invoke(runApp),
 	)

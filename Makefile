@@ -37,7 +37,6 @@ docker-build-dev:
 docker-run-dev:
 	@docker run \
 		-it \
-		-p 9000:9000 \
 		push-agent:latest
 
 docker-build-and-run-dev: docker-build-dev docker-run-dev
@@ -52,7 +51,6 @@ docker-build-prod:
 docker-run-prod:
 	@docker run \
 		-it \
-		-p 9000:9000 \
 		rafaeleyng/push-agent:latest
 
 docker-build-and-run-prod: docker-build-prod docker-run-prod
@@ -60,12 +58,3 @@ docker-build-and-run-prod: docker-build-prod docker-run-prod
 docker-push-prod: docker-build-prod
 	@docker push \
 		rafaeleyng/push-agent
-
-########################################
-# services
-########################################
-services-up:
-	@docker-compose up -d
-
-services-down:
-	@docker-compose down

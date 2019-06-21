@@ -5,6 +5,7 @@ go 1.12
 require (
 	github.com/gin-gonic/gin v1.4.0
 	github.com/go-bongo/bongo v0.10.4
+	github.com/go-redis/redis v6.15.2+incompatible
 	github.com/go-siris/siris v7.4.0+incompatible
 	github.com/maxwellhealth/go-dotaccess v0.0.0-20150208020959-ae070a2d2a38 // indirect
 	github.com/oleiade/reflections v1.0.0 // indirect
