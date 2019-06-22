@@ -26,10 +26,8 @@ func getEnvVariable() (string, error) {
 func setupFromDefaults(config *viper.Viper, env string) {
 	config.Set("env", env)
 
-	/*
-		redis
-	*/
-	config.SetDefault("redis.pubsub.messages", "messages")
+	// redis
+	config.Set("redis.pubsub.publish_task", "publish")
 }
 
 func setupFromConfigurationFile(config *viper.Viper, env string) error {

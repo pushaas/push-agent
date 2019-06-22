@@ -1,6 +1,5 @@
 redis:
-  address: "localhost:6380"
-  password: ""
+  url: "redis://localhost:6380"
 
 push-stream:
   address: "http://localhost:9080"

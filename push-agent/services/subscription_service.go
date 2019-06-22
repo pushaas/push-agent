@@ -3,7 +3,7 @@ package services
 import (
 	"encoding/json"
 
-	"github.com/go-redis/redis"
+	"github.com/RichardKnop/machinery/v1"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
@@ -16,57 +16,47 @@ type (
 	}
 
 	subscriptionService struct{
-		config *viper.Viper
 		logger *zap.Logger
+		machineryServer *machinery.Server
 		pushStreamService PushStreamService
-		redisClient redis.UniversalClient
+		taskName string
 	}
 )
 
-func (s *subscriptionService) handleMessage(payload string) {
+func (s *subscriptionService) handlePublishTask(payload string) error {
 	var message models.Message
 	err := json.Unmarshal([]byte(payload), &message)
 	if err != nil {
 		s.logger.Error("failed to unmarshal message", zap.String("payload", payload), zap.Error(err))
-		return
-	}
-
-	s.pushStreamService.PublishMessage(&message)
-}
-
-func (s *subscriptionService) listenMessagesOn(ch <-chan *redis.Message, handler func(string)) {
-	for msg := range ch {
-		handler(msg.Payload)
-	}
-}
-
-func (s *subscriptionService) subscribeTo(channel string) (<-chan *redis.Message, error) {
-	pubsub := s.redisClient.Subscribe(channel)
-	_, err := pubsub.Receive()
-	if err != nil {
-		s.logger.Error( "error while subscribing to channel", zap.String("channel", channel), zap.Error(err))
-		return nil, err
-	}
-
-	return pubsub.Channel(), nil
-}
-
-func (s *subscriptionService) Subscribe() error {
-	messagesCh, err := s.subscribeTo(s.config.GetString("redis.pubsub.messages"))
-	if err != nil {
 		return err
 	}
 
-	go s.listenMessagesOn(messagesCh, s.handleMessage)
+	s.pushStreamService.PublishMessage(&message)
+	return nil
+}
+
+func (s *subscriptionService) Subscribe() error {
+	err := s.machineryServer.RegisterTask(s.taskName, s.handlePublishTask)
+	if err != nil {
+		s.logger.Error("failed to register publish task", zap.Error(err))
+		return err
+	}
+
+	worker := s.machineryServer.NewWorker("publish_worker", 0)
+	err = worker.Launch()
+	if err != nil {
+		s.logger.Error("failed to launch publish worker", zap.Error(err))
+		return err
+	}
 
 	return nil
 }
 
-func NewSubscriptionService(config *viper.Viper, logger *zap.Logger, redisClient redis.UniversalClient, pushStreamService PushStreamService) SubscriptionService {
+func NewSubscriptionService(config *viper.Viper, logger *zap.Logger, pushStreamService PushStreamService, machineryServer *machinery.Server) SubscriptionService {
 	return &subscriptionService{
-		config: config,
 		logger: logger.Named("subscriptionService"),
+		machineryServer: machineryServer,
 		pushStreamService: pushStreamService,
-		redisClient: redisClient,
+		taskName: config.GetString("redis.pubsub.publish_task"),
 	}
 }
