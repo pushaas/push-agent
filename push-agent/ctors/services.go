@@ -8,7 +8,10 @@ import (
 	"github.com/rafaeleyng/push-agent/push-agent/services"
 )
 
-func NewSubscriptionService(config *viper.Viper, logger *zap.Logger, redisClient redis.UniversalClient) services.SubscriptionService {
-	return services.NewSubscriptionService(config, logger, redisClient)
+func NewSubscriptionService(config *viper.Viper, logger *zap.Logger, redisClient redis.UniversalClient, pushStreamService services.PushStreamService) services.SubscriptionService {
+	return services.NewSubscriptionService(config, logger, redisClient, pushStreamService)
 }
 
+func NewPushStreamService(config *viper.Viper, logger *zap.Logger) services.PushStreamService {
+	return services.NewPushStreamService(config, logger)
+}

@@ -1,11 +1,13 @@
 package services
 
 import (
-	"fmt"
+	"encoding/json"
 
 	"github.com/go-redis/redis"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+
+	"github.com/rafaeleyng/push-agent/push-agent/models"
 )
 
 type (
@@ -16,19 +18,23 @@ type (
 	subscriptionService struct{
 		config *viper.Viper
 		logger *zap.Logger
+		pushStreamService PushStreamService
 		redisClient redis.UniversalClient
 	}
 )
 
-func handleChannel(payload string) {
-	fmt.Println(payload)
+func (s *subscriptionService) handleMessage(payload string) {
+	var message models.Message
+	err := json.Unmarshal([]byte(payload), &message)
+	if err != nil {
+		s.logger.Error("failed to unmarshal message", zap.String("payload", payload), zap.Error(err))
+		return
+	}
+
+	s.pushStreamService.PublishMessage(&message)
 }
 
-func handleMessage(payload string) {
-	fmt.Println(payload)
-}
-
-func handlePublishOn(ch <-chan *redis.Message, handler func(string)) {
+func (s *subscriptionService) listenMessagesOn(ch <-chan *redis.Message, handler func(string)) {
 	for msg := range ch {
 		handler(msg.Payload)
 	}
@@ -46,26 +52,21 @@ func (s *subscriptionService) subscribeTo(channel string) (<-chan *redis.Message
 }
 
 func (s *subscriptionService) Subscribe() error {
-	channelsCh, err := s.subscribeTo(s.config.GetString("redis.pubsub.channels"))
-	if err != nil {
-		return err
-	}
-
 	messagesCh, err := s.subscribeTo(s.config.GetString("redis.pubsub.messages"))
 	if err != nil {
 		return err
 	}
 
-	go handlePublishOn(channelsCh, handleChannel)
-	go handlePublishOn(messagesCh, handleMessage)
+	go s.listenMessagesOn(messagesCh, s.handleMessage)
 
 	return nil
 }
 
-func NewSubscriptionService(config *viper.Viper, logger *zap.Logger, redisClient redis.UniversalClient) SubscriptionService {
+func NewSubscriptionService(config *viper.Viper, logger *zap.Logger, redisClient redis.UniversalClient, pushStreamService PushStreamService) SubscriptionService {
 	return &subscriptionService{
 		config: config,
 		logger: logger.Named("subscriptionService"),
+		pushStreamService: pushStreamService,
 		redisClient: redisClient,
 	}
 }

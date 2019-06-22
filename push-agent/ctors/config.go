@@ -29,7 +29,6 @@ func setupFromDefaults(config *viper.Viper, env string) {
 	/*
 		redis
 	*/
-	config.SetDefault("redis.pubsub.channels", "channels")
 	config.SetDefault("redis.pubsub.messages", "messages")
 }
 

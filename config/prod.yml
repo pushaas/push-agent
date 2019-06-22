@@ -1,3 +1,6 @@
 #redis:
 #  address:
 #  password:
+
+push-stream:
+  address: "http://localhost:9080"

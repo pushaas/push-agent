@@ -20,6 +20,7 @@ func Run() {
 			ctors.NewRedis,
 
 			// services
+			ctors.NewPushStreamService,
 			ctors.NewSubscriptionService,
 		),
 		fx.Invoke(runApp),
