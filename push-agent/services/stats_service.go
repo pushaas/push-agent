@@ -20,15 +20,20 @@ type (
 	}
 
 	statsService struct{
-		logger *zap.Logger
+		channelStatsPrefix string
+		globalStatsPrefix string
+		logger            *zap.Logger
 		pushStreamService PushStreamService
-		redisClient redis.UniversalClient
-		statsKeyPrefix string
+		redisClient       redis.UniversalClient
 	}
 )
 
-func (s *statsService) statsKey(suffix string) string {
-	return fmt.Sprintf("%s_%s", s.statsKeyPrefix, suffix)
+func (s *statsService) globalStatsKey(suffix string) string {
+	return fmt.Sprintf("%s_%s", s.globalStatsPrefix, suffix)
+}
+
+func (s *statsService) channelStatsKey(suffix string) string {
+	return fmt.Sprintf("%s_%s", s.channelStatsPrefix, suffix)
 }
 
 func (s *statsService) getStatsDetailed(ch chan *models.GlobalStatsDetailed) {
@@ -78,7 +83,7 @@ func (s *statsService) UpdateGlobalStats(keySuffix string, expiration time.Durat
 		return
 	}
 
-	key := s.statsKey(fmt.Sprintf("global_%s", keySuffix))
+	key := s.globalStatsKey(fmt.Sprintf("%s", keySuffix))
 	value, err := json.Marshal(stats)
 	if err != nil {
 		s.logger.Error("error marshaling global stats", zap.Error(err))
@@ -111,7 +116,7 @@ func (s *statsService) UpdateChannelsStats(keySuffix string, expiration time.Dur
 
 	// fill pipeline commands
 	for _, channelStats := range detailed.Infos {
-		key := s.statsKey(fmt.Sprintf("channel_%s_host_%s", channelStats.Channel, keySuffix))
+		key := s.channelStatsKey(fmt.Sprintf("%s:%s", channelStats.Channel, keySuffix))
 		value, err := json.Marshal(channelStats)
 		if err != nil {
 			s.logger.Error("error marshaling channel stats", zap.Error(err))
@@ -129,12 +134,14 @@ func (s *statsService) UpdateChannelsStats(keySuffix string, expiration time.Dur
 }
 
 func NewStatsService(config *viper.Viper, logger *zap.Logger, redisClient redis.UniversalClient, pushStreamService PushStreamService) StatsService {
-	statsKeyPrefix := config.GetString("redis.db.stats.prefix")
+	channelStatsPrefix := config.GetString("redis.db.stats_channel.prefix")
+	globalStatsPrefix := config.GetString("redis.db.stats_global.prefix")
 
 	return &statsService{
-		logger: logger.Named("statsService"),
+		channelStatsPrefix: channelStatsPrefix,
+		globalStatsPrefix: globalStatsPrefix,
+		logger:            logger.Named("statsService"),
 		pushStreamService: pushStreamService,
-		redisClient: redisClient,
-		statsKeyPrefix: statsKeyPrefix,
+		redisClient:       redisClient,
 	}
 }
