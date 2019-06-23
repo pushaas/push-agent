@@ -12,7 +12,7 @@ import (
 
 type (
 	SubscriptionService interface {
-		Subscribe() error
+		HandlePublishTask(string) error
 	}
 
 	subscriptionService struct{
@@ -23,7 +23,7 @@ type (
 	}
 )
 
-func (s *subscriptionService) handlePublishTask(payload string) error {
+func (s *subscriptionService) HandlePublishTask(payload string) error {
 	var message models.Message
 	err := json.Unmarshal([]byte(payload), &message)
 	if err != nil {
@@ -32,23 +32,6 @@ func (s *subscriptionService) handlePublishTask(payload string) error {
 	}
 
 	s.pushStreamService.PublishMessage(&message)
-	return nil
-}
-
-func (s *subscriptionService) Subscribe() error {
-	err := s.machineryServer.RegisterTask(s.taskName, s.handlePublishTask)
-	if err != nil {
-		s.logger.Error("failed to register publish task", zap.Error(err))
-		return err
-	}
-
-	worker := s.machineryServer.NewWorker("publish_worker", 0)
-	err = worker.Launch()
-	if err != nil {
-		s.logger.Error("failed to launch publish worker", zap.Error(err))
-		return err
-	}
-
 	return nil
 }
 

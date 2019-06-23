@@ -27,7 +27,10 @@ func setupFromDefaults(config *viper.Viper, env string) {
 	config.Set("env", env)
 
 	// redis
-	config.Set("redis.pubsub.publish_task", "publish")
+	config.SetDefault("redis.pubsub.publish_task", "publish")
+
+	// workers
+	config.SetDefault("workers.subscription.enabled", true)
 }
 
 func setupFromConfigurationFile(config *viper.Viper, env string) error {

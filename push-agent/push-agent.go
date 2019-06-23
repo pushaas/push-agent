@@ -4,11 +4,11 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/rafaeleyng/push-agent/push-agent/ctors"
-	"github.com/rafaeleyng/push-agent/push-agent/services"
+	"github.com/rafaeleyng/push-agent/push-agent/workers"
 )
 
-func runApp(subscriptionService services.SubscriptionService) error {
-	err := subscriptionService.Subscribe()
+func runApp(subscriptionWorker workers.SubscriptionWorker) error {
+	err := subscriptionWorker.DispatchWorker()
 	return err
 }
 
@@ -23,6 +23,9 @@ func Run() {
 			// services
 			ctors.NewPushStreamService,
 			ctors.NewSubscriptionService,
+
+			// workers
+			ctors.NewSubscriptionWorker,
 		),
 		fx.Invoke(runApp),
 	)
