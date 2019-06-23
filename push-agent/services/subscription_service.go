@@ -19,7 +19,6 @@ type (
 		logger *zap.Logger
 		machineryServer *machinery.Server
 		pushStreamService PushStreamService
-		taskName string
 	}
 )
 
@@ -40,6 +39,5 @@ func NewSubscriptionService(config *viper.Viper, logger *zap.Logger, pushStreamS
 		logger: logger.Named("subscriptionService"),
 		machineryServer: machineryServer,
 		pushStreamService: pushStreamService,
-		taskName: config.GetString("redis.pubsub.publish_task"),
 	}
 }

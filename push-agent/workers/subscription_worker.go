@@ -22,6 +22,11 @@ type (
 	}
 )
 
+/*
+	TODO I might have a bug here.
+	I've used machinery to guarantee at-most-once behavior, but this is not desired in real case scenario,
+	where each agent publishes on it's own push-stream. We might have to go back to a basic redis pub/sub.
+*/
 func (w *subscriptionWorker) DispatchWorker() error {
 	err := w.machineryServer.RegisterTask(w.taskName, w.subscriptionService.HandlePublishTask)
 	if err != nil {
@@ -41,7 +46,7 @@ func (w *subscriptionWorker) DispatchWorker() error {
 
 func NewSubscriptionWorker(config *viper.Viper, logger *zap.Logger, machineryServer *machinery.Server, subscriptionService services.SubscriptionService) SubscriptionWorker {
 	enabled := config.GetBool("workers.subscription.enabled")
-	taskName := config.GetString("redis.pubsub.publish_task")
+	taskName := config.GetString("redis.pubsub.tasks.publish")
 
 	return &subscriptionWorker{
 		enabled: enabled,
