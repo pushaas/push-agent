@@ -14,6 +14,7 @@ type (
 	}
 
 	subscriptionWorker struct {
+		workersEnabled bool
 		enabled bool
 		logger *zap.Logger
 		machineryServer *machinery.Server
@@ -27,7 +28,7 @@ type (
 	I've used machinery to guarantee at-most-once behavior, but this is not desired in real case scenario,
 	where each agent publishes on it's own push-stream. We might have to go back to a basic redis pub/sub.
 */
-func (w *subscriptionWorker) DispatchWorker() error {
+func (w *subscriptionWorker) startWorker() error {
 	err := w.machineryServer.RegisterTask(w.taskName, w.subscriptionService.HandlePublishTask)
 	if err != nil {
 		w.logger.Error("failed to register publish task", zap.Error(err))
@@ -44,11 +45,20 @@ func (w *subscriptionWorker) DispatchWorker() error {
 	return nil
 }
 
+func (w *subscriptionWorker) DispatchWorker() error {
+	if w.workersEnabled && w.enabled {
+		 return w.startWorker()
+	}
+	return nil
+}
+
 func NewSubscriptionWorker(config *viper.Viper, logger *zap.Logger, machineryServer *machinery.Server, subscriptionService services.SubscriptionService) SubscriptionWorker {
+	workersEnabled := config.GetBool("workers.enabled")
 	enabled := config.GetBool("workers.subscription.enabled")
 	taskName := config.GetString("redis.pubsub.tasks.publish")
 
 	return &subscriptionWorker{
+		workersEnabled: workersEnabled,
 		enabled: enabled,
 		logger: logger.Named("subscriptionWorker"),
 		machineryServer: machineryServer,

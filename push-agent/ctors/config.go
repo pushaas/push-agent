@@ -32,6 +32,7 @@ func setupFromDefaults(config *viper.Viper, env string) {
 	config.SetDefault("redis.pubsub.tasks.publish", "publish")
 
 	// workers
+	config.SetDefault("workers.enabled", true)
 	config.SetDefault("workers.stats.enabled", true)
 	config.SetDefault("workers.stats.expiration", "2m")
 	config.SetDefault("workers.stats.interval", "1m")
