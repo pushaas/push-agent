@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/imroc/req"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
@@ -13,8 +14,8 @@ import (
 
 type (
 	PushStreamService interface {
-		GetChannelsStatsDetailed() (map[string]interface{}, error)
-		GetChannelsStatsSummarized() (map[string]interface{}, error)
+		GetGlobalStatsDetailed() (*models.GlobalStatsDetailed, error)
+		GetGlobalStatsSummarized() (*models.GlobalStatsSummarized, error)
 		PublishMessage(*models.Message)
 	}
 
@@ -64,14 +65,40 @@ func (s *publicationService) getStatsData(url string) (map[string]interface{}, e
 	return data, nil
 }
 
-func (s *publicationService) GetChannelsStatsDetailed() (map[string]interface{}, error) {
+func (s *publicationService) GetGlobalStatsDetailed() (*models.GlobalStatsDetailed, error) {
 	url := fmt.Sprintf("%s?id=ALL", s.statsEndpoint)
-	return s.getStatsData(url)
+
+	data, err := s.getStatsData(url)
+	if err != nil {
+		return nil, err
+	}
+
+	var stats models.GlobalStatsDetailed
+	err = mapstructure.Decode(data, &stats)
+	if err != nil {
+		s.logger.Error("failed to decode detailed data", zap.String("url", url), zap.Error(err))
+		return nil, err
+	}
+
+	return &stats, nil
 }
 
-func (s *publicationService) GetChannelsStatsSummarized() (map[string]interface{}, error) {
+func (s *publicationService) GetGlobalStatsSummarized() (*models.GlobalStatsSummarized, error) {
 	url := s.statsEndpoint
-	return s.getStatsData(url)
+
+	data, err := s.getStatsData(url)
+	if err != nil {
+		return nil, err
+	}
+
+	var stats models.GlobalStatsSummarized
+	err = mapstructure.Decode(data, &stats)
+	if err != nil {
+		s.logger.Error("failed to decode sumarized data", zap.String("url", url), zap.Error(err))
+		return nil, err
+	}
+
+	return &stats, nil
 }
 
 func NewPushStreamService(config *viper.Viper, logger *zap.Logger, reqClient *req.Req) PushStreamService {

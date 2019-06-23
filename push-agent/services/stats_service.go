@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
@@ -32,8 +31,8 @@ func (s *statsService) statsKey(suffix string) string {
 	return fmt.Sprintf("%s_%s", s.statsKeyPrefix, suffix)
 }
 
-func (s *statsService) getStatsDetailed(ch chan map[string]interface{}) {
-	data, err := s.pushStreamService.GetChannelsStatsDetailed()
+func (s *statsService) getStatsDetailed(ch chan *models.GlobalStatsDetailed) {
+	data, err := s.pushStreamService.GetGlobalStatsDetailed()
 	if err != nil {
 		ch <- nil
 		return
@@ -41,8 +40,8 @@ func (s *statsService) getStatsDetailed(ch chan map[string]interface{}) {
 	ch <- data
 }
 
-func (s *statsService) getStatsSummarized(ch chan map[string]interface{}) {
-	data, err := s.pushStreamService.GetChannelsStatsSummarized()
+func (s *statsService) getStatsSummarized(ch chan *models.GlobalStatsSummarized) {
+	data, err := s.pushStreamService.GetGlobalStatsSummarized()
 	if err != nil {
 		ch <- nil
 		return
@@ -50,9 +49,9 @@ func (s *statsService) getStatsSummarized(ch chan map[string]interface{}) {
 	ch <- data
 }
 
-func (s *statsService) getStats() (map[string]interface{}, error) {
-	chDetailed := make(chan map[string]interface{})
-	chSummarized := make(chan map[string]interface{})
+func (s *statsService) getGlobalStats() (*models.GlobalStats, error) {
+	chDetailed := make(chan *models.GlobalStatsDetailed)
+	chSummarized := make(chan *models.GlobalStatsSummarized)
 
 	go s.getStatsDetailed(chDetailed)
 	go s.getStatsSummarized(chSummarized)
@@ -65,22 +64,27 @@ func (s *statsService) getStats() (map[string]interface{}, error) {
 		return nil, errors.New("failed to get stats")
 	}
 
-	stats := map[string]interface{} {
-		"detailed": detailed,
-		"summarized": summarized,
+	stats := models.GlobalStats{
+		Detailed: detailed,
+		Summarized: summarized,
 	}
 
-	return stats, nil
+	return &stats, nil
 }
 
 func (s *statsService) UpdateGlobalStats(keySuffix string, expiration time.Duration) {
-	stats, err := s.getStats()
+	stats, err := s.getGlobalStats()
 	if err != nil {
 		return
 	}
 
 	key := s.statsKey(fmt.Sprintf("global_%s", keySuffix))
 	value, err := json.Marshal(stats)
+	if err != nil {
+		s.logger.Error("error marshaling global stats", zap.Error(err))
+		return
+	}
+
 	err = s.redisClient.Set(key, value, expiration).Err()
 	if err != nil {
 		s.logger.Error("error saving global stats", zap.String("key", key), zap.Error(err))
@@ -91,37 +95,32 @@ func (s *statsService) UpdateGlobalStats(keySuffix string, expiration time.Durat
 }
 
 func (s *statsService) UpdateChannelsStats(keySuffix string, expiration time.Duration) {
-	data, err := s.pushStreamService.GetChannelsStatsDetailed()
+	detailed, err := s.pushStreamService.GetGlobalStatsDetailed()
 	if err != nil {
 		return
 	}
 
-	infos, ok := data["infos"]
-	if !ok {
-		s.logger.Error("data does not have property 'infos'")
-		return
-	}
-
-	channels, ok := infos.([]interface{})
-	if !ok {
-		s.logger.Error("'infos' does not contain a list")
-		return
-	}
-
+	// init pipeline
 	pipeline := s.redisClient.Pipeline()
-	for _, channel := range channels {
-		var channelInfo models.ChannelInfo
-		err := mapstructure.Decode(channel, &channelInfo)
+	defer func() {
+		err := pipeline.Close()
 		if err != nil {
-			s.logger.Error("failed to map channel", zap.Error(err))
-			continue
+			s.logger.Error("failed do close pipeline", zap.Error(err))
 		}
+	}()
 
-		key := s.statsKey(fmt.Sprintf("channel_%s_host_%s", channelInfo.Channel, keySuffix))
-		value, err := json.Marshal(channelInfo)
+	// fill pipeline commands
+	for _, channelStats := range detailed.Infos {
+		key := s.statsKey(fmt.Sprintf("channel_%s_host_%s", channelStats.Channel, keySuffix))
+		value, err := json.Marshal(channelStats)
+		if err != nil {
+			s.logger.Error("error marshaling channel stats", zap.Error(err))
+			return
+		}
 		pipeline.Set(key, value, expiration)
 	}
 
+	// exec pipeline
 	_, err = pipeline.Exec()
 	if err != nil {
 		s.logger.Error("failed to execute pipeline to update channels stats", zap.Error(err))
