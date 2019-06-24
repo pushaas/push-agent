@@ -14,7 +14,7 @@ import (
 type (
 	PushStreamService interface {
 		GetGlobalStatsDetailed() (*models.GlobalStatsDetailed, error)
-		GetGlobalStatsSummarized() (*models.GlobalStatsSummarized, error)
+		GetGlobalStats() (*models.GlobalStats, error)
 		PublishMessage(*models.Message)
 	}
 
@@ -65,7 +65,7 @@ func (s *publicationService) GetGlobalStatsDetailed() (*models.GlobalStatsDetail
 	return &data, nil
 }
 
-func (s *publicationService) GetGlobalStatsSummarized() (*models.GlobalStatsSummarized, error) {
+func (s *publicationService) GetGlobalStats() (*models.GlobalStats, error) {
 	url := s.statsEndpoint
 	res, err := s.reqClient.Get(url)
 	if err != nil {
@@ -73,7 +73,7 @@ func (s *publicationService) GetGlobalStatsSummarized() (*models.GlobalStatsSumm
 		return nil, err
 	}
 
-	var data models.GlobalStatsSummarized
+	var data models.GlobalStats
 	err = res.ToJSON(&data)
 	if err != nil {
 		s.logger.Error("failed to decode summarized global stats json", zap.String("url", url), zap.Error(err))

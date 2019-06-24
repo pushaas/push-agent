@@ -33,16 +33,15 @@ func (s *statsService) channelStatsKey(suffix string) string {
 	return fmt.Sprintf("%s:%s", s.channelStatsPrefix, suffix)
 }
 
-func (s *statsService) UpdateGlobalStats(keySuffix string, expiration time.Duration) {
+func (s *statsService) UpdateGlobalStats(agentName string, expiration time.Duration) {
 	// get data
-	stats, err := s.pushStreamService.GetGlobalStatsSummarized()
+	stats, err := s.pushStreamService.GetGlobalStats()
 	if err != nil {
 		return
 	}
 
 	// prepare data
-	// TODO remove if not needed
-	//stats.Updated = time.Now().UTC()
+	stats.Agent = agentName
 	value, err := json.Marshal(stats)
 	if err != nil {
 		s.logger.Error("error marshaling global stats", zap.Error(err))
@@ -50,7 +49,7 @@ func (s *statsService) UpdateGlobalStats(keySuffix string, expiration time.Durat
 	}
 
 	// save on redis
-	key := s.globalStatsKey(keySuffix)
+	key := s.globalStatsKey(agentName)
 	err = s.redisClient.Set(key, value, expiration).Err()
 	if err != nil {
 		s.logger.Error("error saving global stats", zap.String("key", key), zap.Error(err))
@@ -60,7 +59,7 @@ func (s *statsService) UpdateGlobalStats(keySuffix string, expiration time.Durat
 	s.logger.Debug("did update global stats", zap.String("key", key))
 }
 
-func (s *statsService) UpdateChannelsStats(keySuffix string, expiration time.Duration) {
+func (s *statsService) UpdateChannelsStats(agentName string, expiration time.Duration) {
 	// get data
 	stats, err := s.pushStreamService.GetGlobalStatsDetailed()
 	if err != nil {
@@ -78,8 +77,7 @@ func (s *statsService) UpdateChannelsStats(keySuffix string, expiration time.Dur
 
 	// fill pipeline commands
 	for _, channelStats := range stats.Infos {
-		// TODO remove if not needed
-		//channelStats.Updated = time.Now().UTC()
+		channelStats.Agent = agentName
 		channelStats.Hostname = stats.Hostname
 
 		value, err := json.Marshal(channelStats)
@@ -88,7 +86,7 @@ func (s *statsService) UpdateChannelsStats(keySuffix string, expiration time.Dur
 			return
 		}
 
-		key := s.channelStatsKey(fmt.Sprintf("%s:%s", channelStats.Channel, keySuffix))
+		key := s.channelStatsKey(fmt.Sprintf("%s:%s", channelStats.Channel, agentName))
 		pipeline.Set(key, value, expiration)
 	}
 
