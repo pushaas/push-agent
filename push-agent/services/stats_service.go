@@ -2,15 +2,12 @@ package services
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/go-redis/redis"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
-
-	"github.com/rafaeleyng/push-agent/push-agent/models"
 )
 
 type (
@@ -29,67 +26,31 @@ type (
 )
 
 func (s *statsService) globalStatsKey(suffix string) string {
-	return fmt.Sprintf("%s_%s", s.globalStatsPrefix, suffix)
+	return fmt.Sprintf("%s:%s", s.globalStatsPrefix, suffix)
 }
 
 func (s *statsService) channelStatsKey(suffix string) string {
-	return fmt.Sprintf("%s_%s", s.channelStatsPrefix, suffix)
-}
-
-func (s *statsService) getStatsDetailed(ch chan *models.GlobalStatsDetailed) {
-	data, err := s.pushStreamService.GetGlobalStatsDetailed()
-	if err != nil {
-		ch <- nil
-		return
-	}
-	ch <- data
-}
-
-func (s *statsService) getStatsSummarized(ch chan *models.GlobalStatsSummarized) {
-	data, err := s.pushStreamService.GetGlobalStatsSummarized()
-	if err != nil {
-		ch <- nil
-		return
-	}
-	ch <- data
-}
-
-func (s *statsService) getGlobalStats() (*models.GlobalStats, error) {
-	chDetailed := make(chan *models.GlobalStatsDetailed)
-	chSummarized := make(chan *models.GlobalStatsSummarized)
-
-	go s.getStatsDetailed(chDetailed)
-	go s.getStatsSummarized(chSummarized)
-
-	detailed := <- chDetailed
-	summarized := <- chSummarized
-
-	if detailed == nil || summarized == nil {
-		s.logger.Error("failed to get stats", zap.Any("detailed", detailed), zap.Any("summarized", summarized))
-		return nil, errors.New("failed to get stats")
-	}
-
-	stats := models.GlobalStats{
-		Detailed: detailed,
-		Summarized: summarized,
-	}
-
-	return &stats, nil
+	return fmt.Sprintf("%s:%s", s.channelStatsPrefix, suffix)
 }
 
 func (s *statsService) UpdateGlobalStats(keySuffix string, expiration time.Duration) {
-	stats, err := s.getGlobalStats()
+	// get data
+	stats, err := s.pushStreamService.GetGlobalStatsSummarized()
 	if err != nil {
 		return
 	}
 
-	key := s.globalStatsKey(fmt.Sprintf("%s", keySuffix))
+	// prepare data
+	// TODO remove if not needed
+	//stats.Updated = time.Now().UTC()
 	value, err := json.Marshal(stats)
 	if err != nil {
 		s.logger.Error("error marshaling global stats", zap.Error(err))
 		return
 	}
 
+	// save on redis
+	key := s.globalStatsKey(keySuffix)
 	err = s.redisClient.Set(key, value, expiration).Err()
 	if err != nil {
 		s.logger.Error("error saving global stats", zap.String("key", key), zap.Error(err))
@@ -100,7 +61,8 @@ func (s *statsService) UpdateGlobalStats(keySuffix string, expiration time.Durat
 }
 
 func (s *statsService) UpdateChannelsStats(keySuffix string, expiration time.Duration) {
-	detailed, err := s.pushStreamService.GetGlobalStatsDetailed()
+	// get data
+	stats, err := s.pushStreamService.GetGlobalStatsDetailed()
 	if err != nil {
 		return
 	}
@@ -115,13 +77,18 @@ func (s *statsService) UpdateChannelsStats(keySuffix string, expiration time.Dur
 	}()
 
 	// fill pipeline commands
-	for _, channelStats := range detailed.Infos {
-		key := s.channelStatsKey(fmt.Sprintf("%s:%s", channelStats.Channel, keySuffix))
+	for _, channelStats := range stats.Infos {
+		// TODO remove if not needed
+		//channelStats.Updated = time.Now().UTC()
+		channelStats.Hostname = stats.Hostname
+
 		value, err := json.Marshal(channelStats)
 		if err != nil {
 			s.logger.Error("error marshaling channel stats", zap.Error(err))
 			return
 		}
+
+		key := s.channelStatsKey(fmt.Sprintf("%s:%s", channelStats.Channel, keySuffix))
 		pipeline.Set(key, value, expiration)
 	}
 

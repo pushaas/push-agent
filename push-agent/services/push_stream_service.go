@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/imroc/req"
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
@@ -48,57 +47,40 @@ func (s *publicationService) PublishMessage(message *models.Message) {
 	}
 }
 
-func (s *publicationService) getStatsData(url string) (map[string]interface{}, error) {
-	res, err := s.reqClient.Get(url)
-	if err != nil {
-		s.logger.Error("failed to get", zap.String("url", url), zap.Error(err))
-		return nil, err
-	}
-
-	data := make(map[string]interface{})
-	err = res.ToJSON(&data)
-	if err != nil {
-		s.logger.Error("failed to decode json", zap.String("url", url), zap.Error(err))
-		return nil, err
-	}
-
-	return data, nil
-}
-
 func (s *publicationService) GetGlobalStatsDetailed() (*models.GlobalStatsDetailed, error) {
 	url := fmt.Sprintf("%s?id=ALL", s.statsEndpoint)
-
-	data, err := s.getStatsData(url)
+	res, err := s.reqClient.Get(url)
 	if err != nil {
+		s.logger.Error("failed to get detailed global stats", zap.String("url", url), zap.Error(err))
 		return nil, err
 	}
 
-	var stats models.GlobalStatsDetailed
-	err = mapstructure.Decode(data, &stats)
+	var data models.GlobalStatsDetailed
+	err = res.ToJSON(&data)
 	if err != nil {
-		s.logger.Error("failed to decode detailed data", zap.String("url", url), zap.Error(err))
+		s.logger.Error("failed to decode detailed global stats json", zap.String("url", url), zap.Error(err))
 		return nil, err
 	}
 
-	return &stats, nil
+	return &data, nil
 }
 
 func (s *publicationService) GetGlobalStatsSummarized() (*models.GlobalStatsSummarized, error) {
 	url := s.statsEndpoint
-
-	data, err := s.getStatsData(url)
+	res, err := s.reqClient.Get(url)
 	if err != nil {
+		s.logger.Error("failed to get summarized global stats", zap.String("url", url), zap.Error(err))
 		return nil, err
 	}
 
-	var stats models.GlobalStatsSummarized
-	err = mapstructure.Decode(data, &stats)
+	var data models.GlobalStatsSummarized
+	err = res.ToJSON(&data)
 	if err != nil {
-		s.logger.Error("failed to decode sumarized data", zap.String("url", url), zap.Error(err))
+		s.logger.Error("failed to decode summarized global stats json", zap.String("url", url), zap.Error(err))
 		return nil, err
 	}
 
-	return &stats, nil
+	return &data, nil
 }
 
 func NewPushStreamService(config *viper.Viper, logger *zap.Logger, reqClient *req.Req) PushStreamService {

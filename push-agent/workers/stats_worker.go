@@ -16,7 +16,6 @@ type (
 	}
 
 	statsWorker struct {
-		workersEnabled bool
 		enabled bool
 		expiration time.Duration
 		interval time.Duration
@@ -25,6 +24,7 @@ type (
 		name string
 		quitChan chan struct{}
 		statsService services.StatsService
+		workersEnabled bool
 	}
 )
 
@@ -63,13 +63,12 @@ func (w *statsWorker) DispatchWorker() {
 }
 
 func NewStatsWorker(config *viper.Viper, logger *zap.Logger, name string, machineryServer *machinery.Server, statsService services.StatsService) StatsWorker {
-	workersEnabled := config.GetBool("workers.enabled")
 	enabled := config.GetBool("workers.stats.enabled")
 	expiration := config.GetDuration("workers.stats.expiration")
 	interval := config.GetDuration("workers.stats.interval")
+	workersEnabled := config.GetBool("workers.enabled")
 
 	return &statsWorker{
-		workersEnabled: workersEnabled,
 		enabled: enabled,
 		expiration: expiration,
 		interval: interval,
@@ -77,6 +76,7 @@ func NewStatsWorker(config *viper.Viper, logger *zap.Logger, name string, machin
 		machineryServer: machineryServer,
 		name: name,
 		statsService: statsService,
+		workersEnabled: workersEnabled,
 	}
 }
 

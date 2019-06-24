@@ -14,12 +14,12 @@ type (
 	}
 
 	subscriptionWorker struct {
-		workersEnabled bool
 		enabled bool
 		logger *zap.Logger
 		machineryServer *machinery.Server
 		subscriptionService services.SubscriptionService
 		taskName string
+		workersEnabled bool
 	}
 )
 
@@ -53,16 +53,16 @@ func (w *subscriptionWorker) DispatchWorker() error {
 }
 
 func NewSubscriptionWorker(config *viper.Viper, logger *zap.Logger, machineryServer *machinery.Server, subscriptionService services.SubscriptionService) SubscriptionWorker {
-	workersEnabled := config.GetBool("workers.enabled")
 	enabled := config.GetBool("workers.subscription.enabled")
 	taskName := config.GetString("redis.pubsub.tasks.publish")
+	workersEnabled := config.GetBool("workers.enabled")
 
 	return &subscriptionWorker{
-		workersEnabled: workersEnabled,
 		enabled: enabled,
 		logger: logger.Named("subscriptionWorker"),
 		machineryServer: machineryServer,
 		subscriptionService: subscriptionService,
 		taskName: taskName,
+		workersEnabled: workersEnabled,
 	}
 }
