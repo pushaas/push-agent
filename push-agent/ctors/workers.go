@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/Pallinder/sillyname-go"
-	"github.com/RichardKnop/machinery/v1"
+	"github.com/go-redis/redis"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
@@ -12,11 +12,11 @@ import (
 	"github.com/rafaeleyng/push-agent/push-agent/workers"
 )
 
-func NewStatsWorker(config *viper.Viper, logger *zap.Logger, machineryServer *machinery.Server, statsService services.StatsService) workers.StatsWorker {
-	name := strings.ReplaceAll(strings.ToLower(sillyname.GenerateStupidName()), " ", "-")
-	return workers.NewStatsWorker(config, logger, name, machineryServer, statsService)
+func NewStatsWorker(config *viper.Viper, logger *zap.Logger, statsService services.StatsService) workers.StatsWorker {
+	agentName := strings.ReplaceAll(strings.ToLower(sillyname.GenerateStupidName()), " ", "-")
+	return workers.NewStatsWorker(config, logger, agentName, statsService)
 }
 
-func NewSubscriptionWorker(config *viper.Viper, logger *zap.Logger, machineryServer *machinery.Server, subscriptionService services.SubscriptionService) workers.SubscriptionWorker {
-	return workers.NewSubscriptionWorker(config, logger, machineryServer, subscriptionService)
+func NewSubscriptionWorker(config *viper.Viper, logger *zap.Logger, redisClient redis.UniversalClient, subscriptionService services.SubscriptionService) workers.SubscriptionWorker {
+	return workers.NewSubscriptionWorker(config, logger, redisClient, subscriptionService)
 }

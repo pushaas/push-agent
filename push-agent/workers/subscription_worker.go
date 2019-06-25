@@ -1,7 +1,7 @@
 package workers
 
 import (
-	"github.com/RichardKnop/machinery/v1"
+	"github.com/go-redis/redis"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
@@ -16,31 +16,38 @@ type (
 	subscriptionWorker struct {
 		enabled bool
 		logger *zap.Logger
-		machineryServer *machinery.Server
+		pubsubChannel string
+		redisClient redis.UniversalClient
 		subscriptionService services.SubscriptionService
-		taskName string
 		workersEnabled bool
 	}
 )
 
-/*
-	TODO I might have a bug here.
-	I've used machinery to guarantee at-most-once behavior, but this is not desired in real case scenario,
-	where each agent publishes on it's own push-stream. We might have to go back to a basic redis pub/sub.
-*/
-func (w *subscriptionWorker) startWorker() error {
-	err := w.machineryServer.RegisterTask(w.taskName, w.subscriptionService.HandlePublishTask)
+func (w *subscriptionWorker) subscribeTo(channel string) (<-chan *redis.Message, error) {
+	pubsub := w.redisClient.Subscribe(channel)
+	_, err := pubsub.Receive()
+
 	if err != nil {
-		w.logger.Error("failed to register publish task", zap.Error(err))
+		w.logger.Error( "error while subscribing to channel", zap.String("channel", channel), zap.Error(err))
+		return nil, err
+	}
+
+	return pubsub.Channel(), nil
+}
+
+func (w *subscriptionWorker) listenMessagesOn(ch <-chan *redis.Message, handler func(*string)) {
+	for msg := range ch {
+		go handler(&msg.Payload)
+	}
+}
+
+func (w *subscriptionWorker) startWorker() error {
+	messagesCh, err := w.subscribeTo(w.pubsubChannel)
+	if err != nil {
 		return err
 	}
 
-	worker := w.machineryServer.NewWorker("publish_worker", 0)
-	err = worker.Launch()
-	if err != nil {
-		w.logger.Error("failed to launch publish worker", zap.Error(err))
-		return err
-	}
+	go w.listenMessagesOn(messagesCh, w.subscriptionService.HandlePublishTask)
 
 	return nil
 }
@@ -52,17 +59,17 @@ func (w *subscriptionWorker) DispatchWorker() error {
 	return nil
 }
 
-func NewSubscriptionWorker(config *viper.Viper, logger *zap.Logger, machineryServer *machinery.Server, subscriptionService services.SubscriptionService) SubscriptionWorker {
+func NewSubscriptionWorker(config *viper.Viper, logger *zap.Logger, redisClient redis.UniversalClient, subscriptionService services.SubscriptionService) SubscriptionWorker {
 	enabled := config.GetBool("workers.subscription.enabled")
-	taskName := config.GetString("redis.pubsub.tasks.publish")
+	pubsubChannel := config.GetString("redis.pubsub-channels.publish")
 	workersEnabled := config.GetBool("workers.enabled")
 
 	return &subscriptionWorker{
 		enabled: enabled,
 		logger: logger.Named("subscriptionWorker"),
-		machineryServer: machineryServer,
+		pubsubChannel: pubsubChannel,
+		redisClient: redisClient,
 		subscriptionService: subscriptionService,
-		taskName: taskName,
 		workersEnabled: workersEnabled,
 	}
 }

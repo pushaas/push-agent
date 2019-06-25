@@ -3,7 +3,6 @@ package workers
 import (
 	"time"
 
-	"github.com/RichardKnop/machinery/v1"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
@@ -16,21 +15,20 @@ type (
 	}
 
 	statsWorker struct {
-		enabled bool
-		expiration time.Duration
-		interval time.Duration
-		logger *zap.Logger
-		machineryServer *machinery.Server
-		name string
-		quitChan chan struct{}
-		statsService services.StatsService
+		enabled        bool
+		expiration     time.Duration
+		interval       time.Duration
+		logger         *zap.Logger
+		agentName      string
+		quitChan       chan struct{}
+		statsService   services.StatsService
 		workersEnabled bool
 	}
 )
 
 func (w *statsWorker) performAction() {
-	go w.statsService.UpdateGlobalStats(w.name, w.expiration)
-	go w.statsService.UpdateChannelsStats(w.name, w.expiration)
+	go w.statsService.UpdateGlobalStats(w.agentName, w.expiration)
+	go w.statsService.UpdateChannelsStats(w.agentName, w.expiration)
 }
 
 // thanks https://stackoverflow.com/a/16466581/1717979
@@ -45,6 +43,7 @@ func (w *statsWorker) startWorker() {
 		case <- w.quitChan:
 			w.quitChan = nil
 			ticker.Stop()
+			w.logger.Info("stopping stats worker")
 			return
 		}
 	}
@@ -62,20 +61,19 @@ func (w *statsWorker) DispatchWorker() {
 	}
 }
 
-func NewStatsWorker(config *viper.Viper, logger *zap.Logger, name string, machineryServer *machinery.Server, statsService services.StatsService) StatsWorker {
+func NewStatsWorker(config *viper.Viper, logger *zap.Logger, agentName string, statsService services.StatsService) StatsWorker {
 	enabled := config.GetBool("workers.stats.enabled")
 	expiration := config.GetDuration("workers.stats.expiration")
 	interval := config.GetDuration("workers.stats.interval")
 	workersEnabled := config.GetBool("workers.enabled")
 
 	return &statsWorker{
-		enabled: enabled,
-		expiration: expiration,
-		interval: interval,
-		logger: logger.Named("statsWorker"),
-		machineryServer: machineryServer,
-		name: name,
-		statsService: statsService,
+		enabled:        enabled,
+		expiration:     expiration,
+		interval:       interval,
+		logger:         logger.Named("statsWorker"),
+		agentName:      agentName,
+		statsService:   statsService,
 		workersEnabled: workersEnabled,
 	}
 }

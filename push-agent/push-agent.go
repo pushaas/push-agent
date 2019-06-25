@@ -32,7 +32,6 @@ func Run() {
 			ctors.NewViper,
 			ctors.NewLogger,
 			ctors.NewRedisClient,
-			ctors.NewMachineryServer,
 
 			// services
 			ctors.NewPushStreamService,

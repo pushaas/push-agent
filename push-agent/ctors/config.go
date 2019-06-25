@@ -29,7 +29,7 @@ func setupFromDefaults(config *viper.Viper, env string) {
 	// redis
 	config.SetDefault("redis.db.stats_global.prefix", "stats_global")
 	config.SetDefault("redis.db.stats_channel.prefix", "stats_channel")
-	config.SetDefault("redis.pubsub.tasks.publish", "publish")
+	config.SetDefault("redis.pubsub-channels.publish", "publish")
 
 	// workers
 	config.SetDefault("workers.enabled", true)
