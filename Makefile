@@ -1,60 +1,81 @@
-.PHONY: build \
-	run
+CONTAINER := push-agent
+IMAGE := rafaeleyng/$(CONTAINER)
+TAG := latest
+NETWORK := push-service-network
 
 ########################################
 # app
 ########################################
+.PHONY: setup
 setup:
 	@go get github.com/oxequa/realize
 
+.PHONY: clean
 clean:
 	@rm -fr ./dist
 
+.PHONY: build
 build: clean
-#	@cp ./config/$(ENV).yml ./dist/config.yml
 	@go build -o ./dist/push-agent main.go
 
+.PHONY: run
 run:
-	@PUSHAGENT_ENV=local go run main.go
+	@go run main.go
 
+.PHONY: watch
 watch:
-	@PUSHAGENT_ENV=local realize start --run --no-config
+	@realize start --run --no-config
 
 ########################################
 # docker
 ########################################
 
 # dev
-docker-create-network:
-	@docker network create -d bridge push-service-network
+.PHONY: docker-clean-dev
+docker-clean-dev:
+	@-docker rm -f $(CONTAINER)-dev
 
+.PHONY: docker-build-dev
 docker-build-dev:
 	@docker build \
 		-f Dockerfile-dev \
-		-t push-agent:latest \
+		-t $(IMAGE)-dev:$(TAG) \
 		.
 
-docker-run-dev:
+.PHONY: docker-run-dev
+docker-run-dev: docker-clean-dev
 	@docker run \
 		-it \
-		push-agent:latest
+		--name=$(CONTAINER)-dev \
+		--network=host \
+		$(IMAGE)-dev:$(TAG)
 
+.PHONY: docker-build-and-run-dev
 docker-build-and-run-dev: docker-build-dev docker-run-dev
 
 # prod
+.PHONY: docker-clean-prod
+docker-clean-prod:
+	@-docker rm -f $(CONTAINER)
+
+.PHONY: docker-build-prod
 docker-build-prod:
 	@docker build \
 		-f Dockerfile-prod \
-		-t rafaeleyng/push-agent:latest \
+		-t $(IMAGE):$(TAG) \
 		.
 
-docker-run-prod:
+.PHONY: docker-run-prod
+docker-run-prod: docker-clean-prod
 	@docker run \
 		-it \
-		rafaeleyng/push-agent:latest
+		--name=push-agent \
+		$(IMAGE):$(TAG)
 
+.PHONY: docker-build-and-run-prod
 docker-build-and-run-prod: docker-build-prod docker-run-prod
 
+.PHONY: docker-push-prod
 docker-push-prod: docker-build-prod
 	@docker push \
-		rafaeleyng/push-agent
+		$(IMAGE):$(TAG)
