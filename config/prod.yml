@@ -1,5 +1,0 @@
-#redis:
-#  url:
-
-push-stream:
-  address: "http://localhost:9080"

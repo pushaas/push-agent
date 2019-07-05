@@ -61,7 +61,7 @@ func (w *subscriptionWorker) DispatchWorker() error {
 
 func NewSubscriptionWorker(config *viper.Viper, logger *zap.Logger, redisClient redis.UniversalClient, subscriptionService services.SubscriptionService) SubscriptionWorker {
 	enabled := config.GetBool("workers.subscription.enabled")
-	pubsubChannel := config.GetString("redis.pubsub-channels.publish")
+	pubsubChannel := config.GetString("redis.pubsub.channels.publish")
 	workersEnabled := config.GetBool("workers.enabled")
 
 	return &subscriptionWorker{

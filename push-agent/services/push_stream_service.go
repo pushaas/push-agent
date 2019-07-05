@@ -84,7 +84,7 @@ func (s *publicationService) GetGlobalStats() (*models.GlobalStats, error) {
 }
 
 func NewPushStreamService(config *viper.Viper, logger *zap.Logger, reqClient *req.Req) PushStreamService {
-	pushStreamAddr := config.GetString("push-stream.url")
+	pushStreamAddr := config.GetString("push_stream.url")
 	publishEndpoint := fmt.Sprintf("%s/pub", pushStreamAddr)
 	statsEndpoint := fmt.Sprintf("%s/channels-stats", pushStreamAddr)
 

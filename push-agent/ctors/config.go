@@ -60,14 +60,14 @@ func setupFromConfigurationFile(config *viper.Viper, env string) error {
 func setupFromDefaults(config *viper.Viper, env string) {
 	config.Set("env", env)
 
-	// push-stream
-	config.SetDefault("push-stream.url", "http://localhost:9080")
+	// push_stream
+	config.SetDefault("push_stream.url", "http://localhost:9080")
 
 	// redis
 	config.SetDefault("redis.url", "redis://localhost:6380")
 	config.SetDefault("redis.db.stats_global.prefix", "stats_global")
 	config.SetDefault("redis.db.stats_channel.prefix", "stats_channel")
-	config.SetDefault("redis.pubsub-channels.publish", "publish")
+	config.SetDefault("redis.pubsub.channels.publish", "publish")
 
 	// workers
 	config.SetDefault("workers.enabled", true)
