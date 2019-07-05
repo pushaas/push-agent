@@ -26,30 +26,15 @@ func getEnvVariable() (string, error) {
 	if env == "" {
 		fmt.Println("[config] env variable not defined, falling back to default:", defaultEnv)
 		env = defaultEnv
+		return env, nil
 	}
 
 	if _, ok := envs[env]; !ok {
 		return "", errors.New(fmt.Sprintf("you passed %s environment variable with an invalid value", envVarName))
-	} else {
-		fmt.Println("[config] env:", env)
 	}
+
+	fmt.Println("[config] env:", env)
 	return env, nil
-}
-
-func setupFromDefaults(config *viper.Viper, env string) {
-	config.Set("env", env)
-
-	// redis
-	config.SetDefault("redis.db.stats_global.prefix", "stats_global")
-	config.SetDefault("redis.db.stats_channel.prefix", "stats_channel")
-	config.SetDefault("redis.pubsub-channels.publish", "publish")
-
-	// workers
-	config.SetDefault("workers.enabled", true)
-	config.SetDefault("workers.stats.enabled", true)
-	config.SetDefault("workers.stats.expiration", "2m")
-	config.SetDefault("workers.stats.interval", "1m")
-	config.SetDefault("workers.subscription.enabled", true)
 }
 
 func setupFromConfigurationFile(config *viper.Viper, env string) error {
@@ -61,11 +46,35 @@ func setupFromConfigurationFile(config *viper.Viper, env string) error {
 
 	config.SetConfigFile(filepath)
 	if err := config.ReadInConfig(); err != nil {
+		if env == defaultEnv {
+			fmt.Printf("[config] no config file found for default env in %s, using default config from code\n", filepath)
+			return nil
+		}
 		return errors.New(fmt.Sprintf("error loading config file: %s", filepath))
 	}
 
 	fmt.Println("[config] loaded config from file:", filepath)
 	return nil
+}
+
+func setupFromDefaults(config *viper.Viper, env string) {
+	config.Set("env", env)
+
+	// push-stream
+	config.SetDefault("push-stream.url", "http://localhost:9080")
+
+	// redis
+	config.SetDefault("redis.url", "redis://localhost:6380")
+	config.SetDefault("redis.db.stats_global.prefix", "stats_global")
+	config.SetDefault("redis.db.stats_channel.prefix", "stats_channel")
+	config.SetDefault("redis.pubsub-channels.publish", "publish")
+
+	// workers
+	config.SetDefault("workers.enabled", true)
+	config.SetDefault("workers.stats.enabled", true)
+	config.SetDefault("workers.stats.expiration", "2m")
+	config.SetDefault("workers.stats.interval", "1m")
+	config.SetDefault("workers.subscription.enabled", true)
 }
 
 func setupFromEnvironment(config *viper.Viper) {
