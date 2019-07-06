@@ -72,6 +72,8 @@ docker-build-prod:
 .PHONY: docker-run-prod
 docker-run-prod: docker-clean-prod
 	@docker run \
+		-e PUSHAGENT_PUSH_STREAM__URL="http://push-stream:9080" \
+		-e PUSHAGENT_REDIS__URL="redis://push-redis:6379" \
 		-it \
 		--name=$(CONTAINER) \
 		--network=$(NETWORK) \
