@@ -1,8 +1,11 @@
-CONTAINER := push-agent
-CONTAINER_DEV := push-agent-dev
-IMAGE := rafaeleyng/$(CONTAINER)
-IMAGE_DEV := rafaeleyng/$(CONTAINER_DEV)
 TAG := latest
+CONTAINER := push-agent
+IMAGE := rafaeleyng/$(CONTAINER)
+IMAGE_TAGGED := $(IMAGE):$(TAG)
+NETWORK := push-service-network
+
+CONTAINER_DEV := $(CONTAINER)-dev
+IMAGE_DEV := rafaeleyng/$(CONTAINER_DEV)
 
 ########################################
 # app
@@ -48,7 +51,7 @@ docker-run-dev: docker-clean-dev
 	@docker run \
 		-it \
 		--name=$(CONTAINER_DEV) \
-		--network=host \
+		--network=$(NETWORK) \
 		$(IMAGE_DEV):$(TAG)
 
 .PHONY: docker-build-and-run-dev
@@ -71,7 +74,7 @@ docker-run-prod: docker-clean-prod
 	@docker run \
 		-it \
 		--name=$(CONTAINER) \
-		--network=host \
+		--network=$(NETWORK) \
 		$(IMAGE):$(TAG)
 
 .PHONY: docker-build-and-run-prod

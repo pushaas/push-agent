@@ -11,4 +11,7 @@ RUN go mod download
 
 COPY . .
 
+ENV PUSHAGENT_PUSH_STREAM__URL http://push-stream:9080
+ENV PUSHAGENT_REDIS__URL redis://push-redis:6379
+
 CMD ["go", "run", "main.go"]

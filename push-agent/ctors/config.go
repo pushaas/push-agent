@@ -64,7 +64,7 @@ func setupFromDefaults(config *viper.Viper, env string) {
 	config.SetDefault("push_stream.url", "http://localhost:9080")
 
 	// redis
-	config.SetDefault("redis.url", "redis://localhost:6380")
+	config.SetDefault("redis.url", "redis://localhost:6379")
 	config.SetDefault("redis.db.stats_global.prefix", "stats_global")
 	config.SetDefault("redis.db.stats_channel.prefix", "stats_channel")
 	config.SetDefault("redis.pubsub.channels.publish", "publish")
