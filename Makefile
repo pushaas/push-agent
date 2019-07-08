@@ -28,6 +28,7 @@ run:
 
 .PHONY: watch
 watch:
+	@-killall push-agent
 	@realize start --run --no-config
 
 ########################################
