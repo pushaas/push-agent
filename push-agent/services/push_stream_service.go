@@ -18,7 +18,7 @@ type (
 		PublishMessage(*models.Message)
 	}
 
-	publicationService struct{
+	pushStreamService struct{
 		config *viper.Viper
 		reqClient *req.Req
 		logger *zap.Logger
@@ -27,7 +27,7 @@ type (
 	}
 )
 
-func (s *publicationService) publishOnSingleChannel(channel string, content *string) {
+func (s *pushStreamService) publishOnSingleChannel(channel string, content *string) {
 	url := fmt.Sprintf("%s?id=%s", s.publishEndpoint, channel)
 
 	header := make(http.Header)
@@ -41,13 +41,13 @@ func (s *publicationService) publishOnSingleChannel(channel string, content *str
 	s.logger.Debug("published on push-stream", zap.String("channel", channel), zap.String("content", *content))
 }
 
-func (s *publicationService) PublishMessage(message *models.Message) {
+func (s *pushStreamService) PublishMessage(message *models.Message) {
 	for _, channel := range message.Channels {
 		go s.publishOnSingleChannel(channel, &message.Content)
 	}
 }
 
-func (s *publicationService) GetGlobalStatsDetailed() (*models.GlobalStatsDetailed, error) {
+func (s *pushStreamService) GetGlobalStatsDetailed() (*models.GlobalStatsDetailed, error) {
 	url := fmt.Sprintf("%s?id=ALL", s.statsEndpoint)
 	res, err := s.reqClient.Get(url)
 	if err != nil {
@@ -65,7 +65,7 @@ func (s *publicationService) GetGlobalStatsDetailed() (*models.GlobalStatsDetail
 	return &data, nil
 }
 
-func (s *publicationService) GetGlobalStats() (*models.GlobalStats, error) {
+func (s *pushStreamService) GetGlobalStats() (*models.GlobalStats, error) {
 	url := s.statsEndpoint
 	res, err := s.reqClient.Get(url)
 	if err != nil {
@@ -88,7 +88,7 @@ func NewPushStreamService(config *viper.Viper, logger *zap.Logger, reqClient *re
 	publishEndpoint := fmt.Sprintf("%s/pub", pushStreamAddr)
 	statsEndpoint := fmt.Sprintf("%s/channels-stats", pushStreamAddr)
 
-	return &publicationService{
+	return &pushStreamService{
 		config: config,
 		reqClient: reqClient,
 		logger: logger.Named("pushStreamService"),
