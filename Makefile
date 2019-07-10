@@ -26,9 +26,12 @@ build: clean
 run:
 	@go run main.go
 
-.PHONY: watch
-watch:
+.PHONY: kill
+kill:
 	@-killall push-agent
+
+.PHONY: watch
+watch: kill
 	@realize start --run --no-config
 
 ########################################
