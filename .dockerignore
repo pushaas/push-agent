@@ -1,4 +1,5 @@
 .idea/
 dist/
+config/local.yml
 Dockerfile-dev
 Dockerfile-prod
