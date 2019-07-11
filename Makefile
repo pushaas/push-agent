@@ -6,6 +6,7 @@ NETWORK := push-service-network
 
 CONTAINER_DEV := $(CONTAINER)-dev
 IMAGE_DEV := rafaeleyng/$(CONTAINER_DEV)
+IMAGE_TAGGED_DEV := $(IMAGE_DEV):$(TAG)
 
 ########################################
 # app
@@ -47,7 +48,7 @@ docker-clean-dev:
 docker-build-dev:
 	@docker build \
 		-f Dockerfile-dev \
-		-t $(IMAGE_DEV):$(TAG) \
+		-t $(IMAGE_TAGGED_DEV) \
 		.
 
 .PHONY: docker-run-dev
@@ -56,7 +57,7 @@ docker-run-dev: docker-clean-dev
 		-it \
 		--name=$(CONTAINER_DEV) \
 		--network=$(NETWORK) \
-		$(IMAGE_DEV):$(TAG)
+		$(IMAGE_TAGGED_DEV)
 
 .PHONY: docker-build-and-run-dev
 docker-build-and-run-dev: docker-build-dev docker-run-dev
