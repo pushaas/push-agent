@@ -5,7 +5,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/rafaeleyng/push-agent/push-agent/models"
+	"github.com/pushaas/push-agent/push-agent/models"
 )
 
 type (

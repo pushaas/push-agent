@@ -8,8 +8,8 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/rafaeleyng/push-agent/push-agent/services"
-	"github.com/rafaeleyng/push-agent/push-agent/workers"
+	"github.com/pushaas/push-agent/push-agent/services"
+	"github.com/pushaas/push-agent/push-agent/workers"
 )
 
 func NewStatsWorker(config *viper.Viper, logger *zap.Logger, statsService services.StatsService) workers.StatsWorker {

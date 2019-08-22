@@ -4,8 +4,8 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
-	"github.com/rafaeleyng/push-agent/push-agent/ctors"
-	"github.com/rafaeleyng/push-agent/push-agent/workers"
+	"github.com/pushaas/push-agent/push-agent/ctors"
+	"github.com/pushaas/push-agent/push-agent/workers"
 )
 
 func runApp(logger *zap.Logger, statsWorker workers.StatsWorker, subscriptionWorker workers.SubscriptionWorker) error {

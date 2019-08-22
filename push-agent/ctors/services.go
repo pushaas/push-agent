@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/rafaeleyng/push-agent/push-agent/services"
+	"github.com/pushaas/push-agent/push-agent/services"
 )
 
 func NewPushStreamService(config *viper.Viper, logger *zap.Logger, reqClient *req.Req) services.PushStreamService {

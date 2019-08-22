@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/rafaeleyng/push-agent/push-agent/services"
+	"github.com/pushaas/push-agent/push-agent/services"
 )
 
 type (

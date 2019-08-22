@@ -1,4 +1,4 @@
-module github.com/rafaeleyng/push-agent
+module github.com/pushaas/push-agent
 
 go 1.12
 
