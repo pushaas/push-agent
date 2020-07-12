@@ -1,6 +1,6 @@
 module github.com/pushaas/push-agent
 
-go 1.12
+go 1.14
 
 require (
 	github.com/Pallinder/sillyname-go v0.0.0-20130730142914-97aeae9e6ba1

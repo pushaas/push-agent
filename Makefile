@@ -1,20 +1,16 @@
 TAG := latest
 CONTAINER := push-agent
-IMAGE := rafaeleyng/$(CONTAINER)
+IMAGE := pushaas/$(CONTAINER)
 IMAGE_TAGGED := $(IMAGE):$(TAG)
 NETWORK := push-service-network
 
 CONTAINER_DEV := $(CONTAINER)-dev
-IMAGE_DEV := rafaeleyng/$(CONTAINER_DEV)
+IMAGE_DEV := pushaas/$(CONTAINER_DEV)
 IMAGE_TAGGED_DEV := $(IMAGE_DEV):$(TAG)
 
 ########################################
 # app
 ########################################
-.PHONY: setup
-setup:
-	@go get github.com/oxequa/realize
-
 .PHONY: clean
 clean:
 	@rm -fr ./dist
@@ -30,10 +26,6 @@ run:
 .PHONY: kill
 kill:
 	@-killall push-agent
-
-.PHONY: watch
-watch: kill
-	@realize start --run --no-config
 
 ########################################
 # docker
@@ -63,19 +55,19 @@ docker-run-dev: docker-clean-dev
 docker-build-and-run-dev: docker-build-dev docker-run-dev
 
 # prod
-.PHONY: docker-clean-prod
-docker-clean-prod:
+.PHONY: docker-clean
+docker-clean:
 	@-docker rm -f $(CONTAINER)
 
-.PHONY: docker-build-prod
-docker-build-prod:
+.PHONY: docker-build
+docker-build:
 	@docker build \
-		-f Dockerfile-prod \
+		-f Dockerfile \
 		-t $(IMAGE):$(TAG) \
 		.
 
-.PHONY: docker-run-prod
-docker-run-prod: docker-clean-prod
+.PHONY: docker-run
+docker-run: docker-clean
 	@docker run \
 		-e PUSHAGENT_PUSH_STREAM__URL="http://push-stream:9080" \
 		-e PUSHAGENT_REDIS__URL="redis://push-redis:6379" \
@@ -84,10 +76,10 @@ docker-run-prod: docker-clean-prod
 		--network=$(NETWORK) \
 		$(IMAGE):$(TAG)
 
-.PHONY: docker-build-and-run-prod
-docker-build-and-run-prod: docker-build-prod docker-run-prod
+.PHONY: docker-build-and-run
+docker-build-and-run: docker-build docker-run
 
-.PHONY: docker-push-prod
-docker-push-prod: docker-build-prod
+.PHONY: docker-push
+docker-push: docker-build
 	@docker push \
 		$(IMAGE):$(TAG)
